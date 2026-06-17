@@ -767,7 +767,7 @@ def tela_dashboard():
         if dados is not None:
             try:
                 dt_leitura = datetime.strptime(dados.get('Data_Hora', ''), '%d/%m/%Y %H:%M:%S')
-                if (obter_hora_brasil() - dt_leitura).total_seconds() <= 120:
+                if (obter_hora_brasil() - dt_leitura).total_seconds() <= 240:
                     is_online = True
                     onlines += 1
             except: pass
