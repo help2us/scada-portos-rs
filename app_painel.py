@@ -929,24 +929,34 @@ def tela_dashboard():
     with aba_historico:
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # --- CABEÇALHO E BOTÃO DE E-MAIL ---
+        # --- CABEÇALHO E FORMULÁRIO DE E-MAIL DINÂMICO ---
         col_t, col_b = st.columns([3, 1])
         with col_t:
             st.markdown("<h3 style='color:#ffffff; font-size:18px;'>Análise de Dados Históricos (Nuvem)</h3>", unsafe_allow_html=True)
             st.markdown("<p style='color:#94a3b8; font-size:13px;'>Gere gráficos e exporte dados a partir do histórico armazenado no servidor Firebase.</p>", unsafe_allow_html=True)
         
         with col_b:
-            if st.button("📧 Enviar Relatório por E-mail", type="secondary", width="stretch", key="btn_email_unico"):
-                with st.spinner("Compilando dados, gerando gráficos e enviando e-mail..."):
-                    try:
-                        from relatorio_email import compilar_enviar_relatorio
-                        sucesso = compilar_enviar_relatorio()
-                        if sucesso:
-                            st.success("Relatório enviado com sucesso!")
-                        else:
-                            st.error("Falha ao enviar o e-mail. Verifique o console da tela preta.")
-                    except Exception as e:
-                        st.error(f"Erro ao executar envio: {e}")
+            # st.popover cria um botão que, ao clicar, abre uma janelinha flutuante!
+            with st.popover("📧 Enviar Relatório por E-mail", use_container_width=True):
+                st.markdown("<p style='color:#005387; font-weight:bold; margin-bottom:5px;'>Credenciais de Envio (Gmail)</p>", unsafe_allow_html=True)
+                email_input = st.text_input("Seu E-mail", placeholder="exemplo@gmail.com")
+                senha_input = st.text_input("Senha de App (16 letras)", type="password", placeholder="abcd efgh ijkl mnop")
+                
+                if st.button("Confirmar e Enviar", type="primary", use_container_width=True, key="btn_confirma_email"):
+                    if not email_input or not senha_input:
+                        st.error("Preencha o e-mail e a senha!")
+                    else:
+                        with st.spinner("Gerando gráficos e enviando..."):
+                            try:
+                                from relatorio_email import compilar_enviar_relatorio
+                                # Manda as credenciais que você acabou de digitar para a função!
+                                sucesso = compilar_enviar_relatorio(email_input, senha_input)
+                                if sucesso:
+                                    st.success("Enviado com sucesso!")
+                                else:
+                                    st.error("Falha de autenticação. Verifique a senha de app.")
+                            except Exception as e:
+                                st.error(f"Erro: {e}")
         
         # --- FILTROS DE BUSCA ---
         col_filtro1, col_filtro2, col_filtro3 = st.columns([2, 1, 1])
