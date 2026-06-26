@@ -101,13 +101,19 @@ def compilar_enviar_relatorio():
             df['Data_Hora_Obj'] = pd.to_datetime(df['Data_Hora'], format='%d/%m/%Y %H:%M:%S')
             df = df.sort_values('Data_Hora_Obj').reset_index(drop=True)
             
-            csv_str = df.drop(columns=['Data_Hora_Obj']).to_csv(sep=';', index=False)
+            # Remove a coluna objeto que causa o erro antes de exportar
+            df_export = df.drop(columns=['Data_Hora_Obj'])
+            csv_str = df_export.to_csv(sep=';', index=False)
             zip_file.writestr(f"{nome_bonito}_Semana.csv", csv_str)
             
-            p_max = df['Potencia_Total_W'].max()
-            p_min = df['Potencia_Total_W'].min()
-            p_med = df['Potencia_Total_W'].mean()
-            p_std = df['Potencia_Total_W'].std()
+            # Converte a coluna Potencia_Total_W para número (float) para garantir que a matemática não falhe
+            df['Potencia_Total_W'] = pd.to_numeric(df['Potencia_Total_W'], errors='coerce')
+            
+            # Calcula as estatísticas ignorando valores vazios (NaN)
+            p_max = float(df['Potencia_Total_W'].max())
+            p_min = float(df['Potencia_Total_W'].min())
+            p_med = float(df['Potencia_Total_W'].mean())
+            p_std = float(df['Potencia_Total_W'].std()) if len(df) > 1 else 0.0
             
             img_bytes = gerar_grafico_png(df, nome_bonito)
             cid = f"img_{cod_banco}"
