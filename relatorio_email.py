@@ -68,7 +68,6 @@ def compilar_enviar_relatorio():
     msg = MIMEMultipart('related')
     msg['Subject'] = f"📊 Relatório Executivo SCADA - Portos RS ({dias_semana[0]} a {dias_semana[-1]})"
     msg['From'] = EMAIL_REMETENTE
-    # Junta todos os e-mails com vírgula para enviar para a equipe toda
     msg['To'] = ", ".join(EMAILS_DESTINO)
 
     html_body = f"""
