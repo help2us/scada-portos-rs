@@ -929,51 +929,58 @@ def tela_dashboard():
     with aba_historico:
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # --- CABEÇALHO E FORMULÁRIO DE E-MAIL DINÂMICO ---
-        col_t, col_b = st.columns([3, 1])
-        with col_t:
-            st.markdown("<h3 style='color:#ffffff; font-size:18px;'>Análise de Dados Históricos (Nuvem)</h3>", unsafe_allow_html=True)
-            st.markdown("<p style='color:#94a3b8; font-size:13px;'>Gere gráficos e exporte dados a partir do histórico armazenado no servidor Firebase.</p>", unsafe_allow_html=True)
+        # --- CABEÇALHO DA ABA HISTÓRICO ---
+        st.markdown("<h3 style='color:#ffffff; font-size:18px;'>Análise de Dados Históricos (Nuvem)</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='color:#94a3b8; font-size:13px;'>Gere gráficos e exporte dados a partir do histórico armazenado no servidor Firebase.</p>", unsafe_allow_html=True)
         
-        with col_b:
-            # st.popover cria um botão que, ao clicar, abre uma janelinha flutuante!
-            with st.popover("📧 Enviar Relatório por E-mail", use_container_width=True):
-                st.markdown("<p style='color:#005387; font-weight:bold; margin-bottom:5px;'>Credenciais de Envio (Gmail)</p>", unsafe_allow_html=True)
-                email_input = st.text_input("Seu E-mail", placeholder="exemplo@gmail.com")
-                senha_input = st.text_input("Senha de App (16 letras)", type="password", placeholder="abcd efgh ijkl mnop")
-                
-                if st.button("Confirmar e Enviar", type="primary", use_container_width=True, key="btn_confirma_email"):
-                    if not email_input or not senha_input:
-                        st.error("Preencha o e-mail e a senha!")
-                    else:
-                        with st.spinner("Gerando gráficos e enviando..."):
-                            try:
-                                from relatorio_email import compilar_enviar_relatorio
-                                # Manda as credenciais que você acabou de digitar para a função!
-                                sucesso = compilar_enviar_relatorio(email_input, senha_input)
-                                if sucesso:
-                                    st.success("Enviado com sucesso!")
-                                else:
-                                    st.error("Falha de autenticação. Verifique a senha de app.")
-                            except Exception as e:
-                                st.error(f"Erro: {e}")
+        # --- FILTROS DE BUSCA E BOTÃO DE E-MAIL ---
+        # Organizamos os filtros e o botão de e-mail na mesma linha
+        col_f1, col_f2, col_f3, col_email = st.columns([2, 1, 1, 1.5])
         
-        # --- FILTROS DE BUSCA ---
-        col_filtro1, col_filtro2, col_filtro3 = st.columns([2, 1, 1])
         nomes_bonitos = list(DICIONARIO_NOMES.values())
-        sub_escolhida = col_filtro1.selectbox("Selecione a Subestação", nomes_bonitos, key="sel_subestacao")
+        sub_escolhida = col_f1.selectbox("Selecione a Subestação", nomes_bonitos, key="sel_subestacao")
         nome_banco = [k for k, v in DICIONARIO_NOMES.items() if v == sub_escolhida][0]
         
-        data_inicio = col_filtro2.date_input("Data Inicial", key="data_ini")
-        data_fim = col_filtro3.date_input("Data Final", key="data_fim")
+        data_inicio = col_f2.date_input("Data Inicial", key="data_ini")
+        data_fim = col_f3.date_input("Data Final", key="data_fim")
         
-        # --- MEMÓRIA DO GRÁFICO (Para não sumir no Auto-Refresh) ---
+        # Botão de E-mail com Validação de Usuário
+        with col_email:
+            st.markdown("<div style='margin-top: 28px;'></div>", unsafe_allow_html=True) # Alinha o botão com os inputs
+            with st.popover("📧 Enviar Relatório por E-mail", use_container_width=True):
+                st.markdown("<p style='color:#005387; font-weight:bold; margin-bottom:5px;'>Autorização de Envio</p>", unsafe_allow_html=True)
+                email_solicitante = st.text_input("Seu E-mail Corporativo", placeholder="exemplo@gmail.com")
+                
+                if st.button("Solicitar Envio", type="primary", use_container_width=True, key="btn_confirma_email"):
+                    # Lista de e-mails autorizados a pedir o relatório
+                    emails_autorizados = ["gabrielbranco2002@gmail.com", "natan25cmartins@gmail.com", "lucasmeurercardoso@gmail.com", "marcost04@gmail.com"]
+                    
+                    if not email_solicitante:
+                        st.error("Preencha o e-mail!")
+                    elif email_solicitante.strip().lower() not in emails_autorizados:
+                        st.error("Acesso Negado. Este e-mail não está cadastrado no sistema SCADA.")
+                    else:
+                        with st.spinner("Autenticado. Gerando gráficos e enviando..."):
+                            try:
+                                from relatorio_email import compilar_enviar_relatorio
+                                # O botão agora chama a função SEM passar senha. 
+                                # A função vai usar a senha que está salva no Cofre (Secrets) do Streamlit.
+                                sucesso = compilar_enviar_relatorio()
+                                if sucesso:
+                                    st.success(f"Relatório enviado com sucesso para toda a equipe!")
+                                else:
+                                    st.error("Falha interna ao enviar o e-mail.")
+                            except Exception as e:
+                                st.error(f"Erro: {e}")
+
+        # --- MEMÓRIA DO GRÁFICO ---
         if 'df_historico' not in st.session_state:
             st.session_state['df_historico'] = None
             st.session_state['nome_hist'] = ""
         
-        # --- BOTÃO DE GERAR GRÁFICOS ---
-        if st.button("Gerar Gráficos e Relatório", type="primary", width="stretch", key="btn_gerar_unico"):
+        # --- BOTÃO ÚNICO DE GERAR GRÁFICOS ---
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+        if st.button("Gerar Gráficos na Tela", type="primary", width="stretch", key="btn_gerar_unico"):
             with st.spinner("Baixando histórico da nuvem... Isso pode levar alguns segundos."):
                 datas_selecionadas = pd.date_range(data_inicio, data_fim).strftime('%Y-%m-%d').tolist()
                 dados_historico = []
@@ -991,24 +998,17 @@ def tela_dashboard():
                     df_filtrado = pd.DataFrame(dados_historico)
                     df_filtrado['Data_Hora_Obj'] = pd.to_datetime(df_filtrado['Data_Hora'], format='%d/%m/%Y %H:%M:%S')
                     
-                    # =================================================================
-                    # MODO CURVA CONTÍNUA (Conecta os pontos ignorando as quedas)
-                    # =================================================================
-                    # 1. Ordena pela data e remove possíveis duplicações
                     df_filtrado = df_filtrado.sort_values('Data_Hora_Obj').drop_duplicates(subset=['Data_Hora_Obj'])
+                    df_filtrado = df_filtrado.set_index('Data_Hora_Obj').resample('1min').asfreq().fillna(0).reset_index()
+                    df_filtrado['Data_Hora'] = df_filtrado['Data_Hora_Obj'].dt.strftime('%d/%m/%Y %H:%M:%S')
                     
-                    # 2. Reseta o índice (NÃO preenche os buracos com 0)
-                    df_filtrado = df_filtrado.reset_index(drop=True)
-                    # =================================================================
-                    
-                    # Salva os dados na memória da sessão
                     st.session_state['df_historico'] = df_filtrado
                     st.session_state['nome_hist'] = sub_escolhida
                 else:
                     st.session_state['df_historico'] = None
                     st.warning("Nenhum dado encontrado na nuvem para este período.")
         
-        # --- RENDERIZAÇÃO DOS 5 GRÁFICOS PLOTLY ---
+        # --- RENDERIZAÇÃO DOS GRÁFICOS PLOTLY ---
         if st.session_state.get('df_historico') is not None:
             df_plot = st.session_state['df_historico']
             nome_sub = st.session_state['nome_hist']
