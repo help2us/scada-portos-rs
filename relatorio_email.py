@@ -15,17 +15,24 @@ from datetime import datetime, timedelta
 # CONFIGURAÇÕES DO RELATÓRIO
 # ==============================================================================
 FIREBASE_URL = 'https://scada-portos-rs-cb2ab-default-rtdb.firebaseio.com'
-EMAIL_DESTINO = "gabrielbranco2002@gmail.com"
 
-# Tenta ler a senha do Cofre da Nuvem (Streamlit Secrets)
+# LISTA DE QUEM VAI RECEBER O RELATÓRIO (Destinatários)
+EMAILS_DESTINO = [
+    "gabrielbranco2002@gmail.com",
+    "natan25cmartins@gmail.com",
+    "lucasmeurercardoso@gmail.com",
+    "marcost04@gmail.com"
+]
+
+# Tenta ler a senha do Cofre da Nuvem (Streamlit Secrets) para o botão manual
 try:
     import streamlit as st
     EMAIL_REMETENTE = st.secrets["EMAIL_REMETENTE"]
     SENHA_GMAIL = st.secrets["SENHA_GMAIL"]
 except:
-    # Se falhar (ex: rodando no PC local às 07:00), usa as credenciais fixas abaixo:
-    EMAIL_REMETENTE = "seu_email_que_vai_enviar@gmail.com"
-    SENHA_GMAIL = "suasenhadedezeisseisletras"
+    # Se falhar (rodando no PC local às 07:00), usa o seu e-mail como Robô Disparador:
+    EMAIL_REMETENTE = "gabrielbranco2002@gmail.com"
+    SENHA_GMAIL = "sohkjyjnnpwfbpiu"  # Sua senha de app sem espaços
 
 DICIONARIO_NOMES = {
     'MED_SUB_SE-A': 'Subestação A', 'MED_SUB_SE-B': 'Subestação B', 'MED_SUB_SE-C': 'Subestação C',
@@ -61,7 +68,8 @@ def compilar_enviar_relatorio():
     msg = MIMEMultipart('related')
     msg['Subject'] = f"📊 Relatório Executivo SCADA - Portos RS ({dias_semana[0]} a {dias_semana[-1]})"
     msg['From'] = EMAIL_REMETENTE
-    msg['To'] = EMAIL_DESTINO
+    # Junta todos os e-mails com vírgula para enviar para a equipe toda
+    msg['To'] = ", ".join(EMAILS_DESTINO)
 
     html_body = f"""
     <html>
@@ -72,7 +80,7 @@ def compilar_enviar_relatorio():
                 <p style="margin: 5px 0 0 0; font-size: 14px; color: #00aeef;">Relatório Analítico Semanal</p>
             </div>
             <div style="padding: 30px;">
-                <p>Prezado(a) Engenheiro(a),</p>
+                <p>Prezados(as) Engenheiros(as),</p>
                 <p>Segue o resumo estatístico e os gráficos de desempenho das subestações referentes aos últimos 7 dias.</p>
     """
 
@@ -153,7 +161,7 @@ def compilar_enviar_relatorio():
         server.login(EMAIL_REMETENTE, SENHA_GMAIL)
         server.send_message(msg)
         server.quit()
-        print("[RELATÓRIO] E-mail enviado com sucesso!")
+        print("[RELATÓRIO] E-mail enviado com sucesso para toda a equipe!")
         return True
     except Exception as e:
         print(f"[ERRO RELATÓRIO] Falha ao enviar e-mail: {e}")
