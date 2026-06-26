@@ -1040,7 +1040,7 @@ def tela_dashboard():
 
             separador_grafico("📋 Tabela de Dados Brutos")
             st.dataframe(df_plot.drop(columns=['Data_Hora_Obj']).tail(200), width="stretch", height=320)
-            
+                  
 # MAIN ROUTER
 # ==============================================================================
 def main():
